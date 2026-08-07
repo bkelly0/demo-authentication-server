@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Authentication Server</title>
+    <link rel="stylesheet" th:href="@{/auth/oauth-pages.css}" href="/auth/oauth-pages.css" />
+</head>
+<body>
+<div class="page-shell">
+    <main class="auth-card">
+        <header class="card-header">
+            <p class="eyebrow">OAuth Server</p>
+            <h1>Authentication Server</h1>
+            <p class="subtitle">Authorization endpoints are active and ready.</p>
+        </header>
+        <a class="secondary-link" th:href="@{/oauth2/authorize}" href="/oauth2/authorize">Start authorization</a>
+    </main>
+</div>
+</body>
+</html>
+

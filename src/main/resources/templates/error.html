@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Request Error</title>
+    <link rel="stylesheet" th:href="@{/auth/oauth-pages.css}" href="/auth/oauth-pages.css" />
+</head>
+<body>
+<div class="page-shell">
+    <main class="auth-card">
+        <header class="card-header">
+            <p class="eyebrow">Request Error</p>
+            <h1>Something went wrong</h1>
+            <p class="subtitle" th:text="${message}">The request could not be completed.</p>
+        </header>
+
+        <div class="error-meta">
+            <p><strong>Status:</strong> <span th:text="${status}">400</span></p>
+            <p><strong>Path:</strong> <span th:text="${path}">/oauth2/authorize</span></p>
+        </div>
+
+        <a class="secondary-link" th:href="@{/}" href="/">Back to home</a>
+    </main>
+</div>
+</body>
+</html>
+

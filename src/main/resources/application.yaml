@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: authentication-server
+  config:
+    import: "optional:configserver:${CONFIG_SERVER:http://localhost:8888}"
+  cloud:
+    config:
+      request-connect-timeout: 5000 #use a long timeout for the config server, as it scales to zero
+      request-read-timeout: 10000
+
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        name: AUTHSESSION #prevent cookie from being overwritten by other apps running on the same domain
+
+app:
+  issuer: http://localhost:8081
+  certificate:
+    file: ${CERTIFICATE_FILE:/etc/ssl/certs/certificate.p12}
+    password: password
+
+---
+spring:
+  config:
+    activate:
+      on-profile: database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_db?currentSchema=auth
+    username: auth_user
+    password: auth_password
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      username: default
+      password: valkey_password
+      database: 0
+
+---
+spring:
+  config:
+    activate:
+        on-profile: in-memory
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+server:
+  port: 8081
+app:
+  bootstrap:
+    default-users:
+      - username: userA
+        password: demo #real passwords come from secrets manager via the config server
+        roles: read:api:a
+      - username: userB
+        password: demo #real passwords come from secrets manager via the config server
+        roles: read:api:b
+    default-client:
+      id: gateway-client
+      secret: client-secret
+      name: Default PKCE gateway Client
+      redirect-uri: http://localhost:8080/login/oauth2/code/demo
+      post-logout-redirect-uri: http://localhost:8080
+      scopes:
+        - read:resource
+        - openid
+        - profile
+  cors:
+    allowed-origins:
+      - "http://localhost:8080"
+    allowed-methods:
+      - "GET"
+      - "POST"
+    allowed-headers:
+      - "*"
+    allow-credentials: true
+    max-age: 3600
+
+---
+spring:
+  config:
+    activate:
+      on-profile: json-logs
+logging:
+  structured:
+    format:
+      console: logstash

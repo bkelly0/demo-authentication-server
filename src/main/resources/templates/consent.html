@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Approve Access</title>
+    <link rel="stylesheet" th:href="@{/auth/oauth-pages.css}" href="/auth/oauth-pages.css" />
+</head>
+<body>
+<div class="page-shell">
+    <main class="auth-card">
+        <header class="card-header">
+            <p class="eyebrow">Authorization Request</p>
+            <h1>Approve access</h1>
+            <p class="subtitle">
+                <strong th:text="${clientName}">Client app</strong>
+                wants permission to access your account.
+            </p>
+        </header>
+
+        <form class="auth-form" method="post" th:action="@{/oauth2/authorize}" action="/oauth2/authorize">
+            <input type="hidden" name="client_id" th:value="${clientId}" />
+            <input type="hidden" name="state" th:value="${state}" />
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <fieldset class="scope-list">
+                <legend>Requested scopes</legend>
+                <label class="scope-item" th:each="requestedScope : ${scopes}">
+                    <input type="checkbox" name="scope" th:value="${requestedScope}" checked />
+                    <span>
+                        <strong th:text="${requestedScope}">openid</strong>
+                        <small class="scope-copy" th:text="${scopeDescriptions[requestedScope]}">Confirm your identity.</small>
+                    </span>
+                </label>
+            </fieldset>
+
+            <div class="button-row">
+                <button class="primary-btn" type="submit" name="consent_action" value="approve">Allow</button>
+                <button class="secondary-btn" type="submit" name="consent_action" value="cancel">Deny</button>
+            </div>
+        </form>
+    </main>
+</div>
+</body>
+</html>
+

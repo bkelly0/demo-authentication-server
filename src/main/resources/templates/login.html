@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in</title>
+    <link rel="stylesheet" th:href="@{/auth/oauth-pages.css}" href="/auth/oauth-pages.css" />
+</head>
+<body>
+<div class="page-shell">
+    <main class="auth-card">
+        <header class="card-header">
+            <p class="eyebrow">Demo Authentication</p>
+            <h1>Sign in</h1>
+            <p class="subtitle">Use one of the pre-configured demo accounts below to see the demo in action.</p>
+            <p>Username: <strong>userA</strong> with password: <strong>demo</strong> has role: <strong>read:api:a</strong></p>
+            <p>Username: <strong>userB</strong> with password: <strong>demo</strong> has role: <strong>read:api:b</strong></p>
+        </header>
+
+        <p class="alert" th:if="${hasError}">Invalid username or password.</p>
+        <p class="info" th:if="${hasLogout}">You have been signed out.</p>
+
+        <form class="auth-form" method="post" th:action="@{/login}" action="/login">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <label class="field">
+                <span>Username</span>
+                <input type="text" name="username" autocomplete="username" required autofocus />
+            </label>
+
+            <label class="field">
+                <span>Password</span>
+                <input type="password" name="password" autocomplete="current-password" required />
+            </label>
+
+            <button class="primary-btn" type="submit">Continue</button>
+        </form>
+    </main>
+</div>
+</body>
+</html>
+

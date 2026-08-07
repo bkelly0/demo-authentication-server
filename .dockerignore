@@ -1,0 +1,18 @@
+.git
+.gitignore
+.gradle
+build
+out
+.idea
+*.iml
+
+# Local runtime data
+/docker/postgres_data
+
+# Node artifacts if added later
+node_modules
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+

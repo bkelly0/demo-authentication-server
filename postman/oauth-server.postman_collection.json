@@ -1,0 +1,701 @@
+{
+  "info": {
+    "_postman_id": "9f0ec4e8-0e1f-4d72-8c0a-4f6af4dc5d91",
+    "name": "Demo Authentication Server - OAuth/OIDC",
+    "description": "Postman collection for the OAuth 2.0 / OpenID Connect endpoints exposed by the auth server in this project.\n\nThis collection targets the endpoints configured by `AuthConfig` and does not include the separate `/clients` management API from `openapi-client-management.yaml`.\n\nIf `/oauth2/authorize` returns a 302 redirect, disable automatic redirects in Postman so you can capture the authorization code from the `Location` header.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "OpenID Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/.well-known/openid-configuration",
+            "description": "OpenID Connect discovery document."
+          }
+        },
+        {
+          "name": "OAuth Authorization Server Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/.well-known/oauth-authorization-server",
+            "description": "OAuth 2.0 authorization server metadata."
+          }
+        },
+        {
+          "name": "JWK Set",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/oauth2/jwks",
+            "description": "Public JSON Web Key Set used to verify JWTs issued by the authorization server."
+          }
+        }
+      ]
+    },
+    {
+      "name": "PKCE Authorization Code Flow",
+      "item": [
+        {
+          "name": "Authorize with PKCE",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';",
+                  "function randomString(length) {",
+                  "  let output = '';",
+                  "  for (let i = 0; i < length; i += 1) {",
+                  "    output += alphabet[Math.floor(Math.random() * alphabet.length)];",
+                  "  }",
+                  "  return output;",
+                  "}",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "  pm.variables.set(key, value);",
+                  "}",
+                  "const verifier = randomString(64);",
+                  "const challenge = CryptoJS.SHA256(verifier).toString(CryptoJS.enc.Base64)",
+                  "  .replace(/\\+/g, '-')",
+                  "  .replace(/\//g, '_')",
+                  "  .replace(/=+$/g, '');",
+                  "setVar('pkceVerifier', verifier);",
+                  "setVar('pkceChallenge', challenge);",
+                  "setVar('oauthState', randomString(16));",
+                  "setVar('oauthNonce', randomString(24));",
+                  "console.log('PKCE verifier:', verifier);",
+                  "console.log('PKCE challenge:', challenge);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Authorization endpoint responded', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302, 401]);",
+                  "});",
+                  "const location = pm.response.headers.get('Location');",
+                  "if (location) {",
+                  "  try {",
+                  "    const redirectUrl = new URL(location);",
+                  "    const code = redirectUrl.searchParams.get('code');",
+                  "    if (code) {",
+                  "      pm.collectionVariables.set('authorizationCode', code);",
+                  "    }",
+                  "    const state = redirectUrl.searchParams.get('state');",
+                  "    if (state) {",
+                  "      pm.collectionVariables.set('authorizationState', state);",
+                  "    }",
+                  "  } catch (error) {",
+                  "    console.log('Unable to parse Location header:', error);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/oauth2/authorize?response_type=code&client_id={{clientId}}&redirect_uri={{redirectUri}}&scope={{scopes}}&state={{oauthState}}&code_challenge={{pkceChallenge}}&code_challenge_method=S256&nonce={{oauthNonce}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "oauth2",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "response_type",
+                  "value": "code"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{redirectUri}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "{{scopes}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{oauthState}}"
+                },
+                {
+                  "key": "code_challenge",
+                  "value": "{{pkceChallenge}}"
+                },
+                {
+                  "key": "code_challenge_method",
+                  "value": "S256"
+                },
+                {
+                  "key": "nonce",
+                  "value": "{{oauthNonce}}"
+                }
+              ]
+            },
+            "description": "Initiates the authorization code + PKCE flow.\n\nThis request uses Basic Auth for the resource owner login because the project config enables HTTP Basic and does not define a form-login page. The response should redirect to the configured redirect URI with `code` and `state`."
+          }
+        },
+        {
+          "name": "Exchange Authorization Code for Tokens (Public PKCE Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token response received', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "let json = {};",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  console.log('Token response is not JSON:', error);",
+                  "}",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+                  "}",
+                  "if (json.id_token) {",
+                  "  pm.collectionVariables.set('idToken', json.id_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "authorization_code",
+                  "type": "text"
+                },
+                {
+                  "key": "code",
+                  "value": "{{authorizationCode}}",
+                  "type": "text"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{redirectUri}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "code_verifier",
+                  "value": "{{pkceVerifier}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/token",
+            "description": "Redeems the authorization code for access, refresh, and ID tokens for the public PKCE client."
+          }
+        },
+        {
+          "name": "Refresh Access Token (Public PKCE Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refresh response received', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "let json = {};",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  console.log('Refresh response is not JSON:', error);",
+                  "}",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "type": "text"
+                },
+                {
+                  "key": "refresh_token",
+                  "value": "{{refreshToken}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/token",
+            "description": "Uses the refresh token to obtain a new access token for the public client."
+          }
+        },
+        {
+          "name": "UserInfo",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/userinfo",
+            "description": "Calls the OpenID Connect UserInfo endpoint with the access token returned by `/oauth2/token`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Client-Authenticated Operations",
+      "item": [
+        {
+          "name": "Exchange Authorization Code for Tokens (Confidential Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token response received', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "let json = {};",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  console.log('Token response is not JSON:', error);",
+                  "}",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+                  "}",
+                  "if (json.id_token) {",
+                  "  pm.collectionVariables.set('idToken', json.id_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{clientSecret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "authorization_code",
+                  "type": "text"
+                },
+                {
+                  "key": "code",
+                  "value": "{{authorizationCode}}",
+                  "type": "text"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{redirectUri}}",
+                  "type": "text"
+                },
+                {
+                  "key": "code_verifier",
+                  "value": "{{pkceVerifier}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/token",
+            "description": "Redeems the authorization code for tokens when the client is configured with a secret. Basic Auth supplies the client credentials."
+          }
+        },
+        {
+          "name": "Refresh Access Token (Confidential Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refresh response received', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "let json = {};",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  console.log('Refresh response is not JSON:', error);",
+                  "}",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{clientSecret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "type": "text"
+                },
+                {
+                  "key": "refresh_token",
+                  "value": "{{refreshToken}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/token",
+            "description": "Uses the refresh token to obtain a new access token when client authentication is required."
+          }
+        },
+        {
+          "name": "Introspect Token",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{clientSecret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "text"
+                },
+                {
+                  "key": "token_type_hint",
+                  "value": "access_token",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/introspect",
+            "description": "Introspects an access token using client authentication."
+          }
+        },
+        {
+          "name": "Revoke Token",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{clientSecret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "text"
+                },
+                {
+                  "key": "token_type_hint",
+                  "value": "access_token",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth2/revoke",
+            "description": "Revokes an access token using client authentication. Change `token_type_hint` to `refresh_token` if you want to revoke a refresh token instead."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "pkce-client",
+      "type": "string"
+    },
+    {
+      "key": "clientSecret",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "redirectUri",
+      "value": "http://127.0.0.1:8081/callback",
+      "type": "string"
+    },
+    {
+      "key": "scopes",
+      "value": "openid profile",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "testuser",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pkceVerifier",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pkceChallenge",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "oauthState",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "oauthNonce",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authorizationCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authorizationState",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
+

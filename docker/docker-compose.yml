@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: authentication-server-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:latest
+    container_name: auth-server-valkey
+    restart: unless-stopped
+    environment:
+      VALKEY_PASSWORD: valkey_password
+    command: >
+      sh -c 'exec valkey-server --appendonly yes --requirepass valkey_password'
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./valkey_data:/data
