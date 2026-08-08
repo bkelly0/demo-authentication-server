@@ -39,6 +39,8 @@ steps:
       - ${_VPC_EGRESS}
       - --min-instances=0
       - --max-instances=1
+      - --concurrency
+      - "10"
       - --port
       - "8080"
       - --set-secrets

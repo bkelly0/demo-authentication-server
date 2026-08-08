@@ -47,7 +47,8 @@ logs/
 
 ### Docker local volumes ###
 docker/volumes/
-postgres_data/
+docker/postgres_data/
+docker/valkey_data/
 
 ### OS ###
 .DS_Store
